@@ -4,11 +4,11 @@
       Fast To-Do
     </h1>
 
-    <h6 class="mb-5 text-secondary">
+    <h6 class="mb-4 pb-3 text-secondary">
       Powered by HRCodes
     </h6>
 
-    <form @submit.prevent="addTodo" class="mb-5 pb-4" autocomplete="off">
+    <form @submit.prevent="addTodo" class="mb-3" autocomplete="off">
       <label for="todo">
         <input
           id="todo"
@@ -43,19 +43,18 @@
         id="--submit"
         class="ms-2 text-white rounded"
       >
-        Adicionar
+        <img src="@/assets/icons/add.png" alt="Adicionar Tarefa">
       </button>
     </form>
 
     <div class="content overflow-auto">
-      <simplebar data-simplebar-auto-hide="false"></simplebar>
       <div
         v-for="(todo, index) in todoList"
         :key="index"
         class="d-flex align-items-center rounded mt-3 task mx-auto p-0"
         v-bind:class="Number(todo.status) === 1 ? 'bg-completed text-white' : 'bg-white'"
-        @mouseenter="settings.showDelete[todo.id] = true"
-        @mouseleave="settings.showDelete[todo.id] = false"
+        @mouseenter="settings.showDelete[index] = true"
+        @mouseleave="settings.showDelete[index] = false"
       >
         <div
           class="col alert mb-0 row align-items-center"
@@ -70,19 +69,19 @@
               `"
             />
 
-            <h5 class="col p-0 m-0 text-start">
+            <h6 class="col p-0 m-0 text-start">
               {{ todo.name }}
-            </h5>
+            </h6>
           </div>
         </div>
-          {{settings.showDelete[todo.id]}}
-        <Transition name="slide-fade">
+
+        <Transition name="nested">
           <button
-            v-if="settings.showDelete[todo.id]"
-            class="btn btn btn-danger col-auto --delete rounded-0 rounded-end border-0"
+            v-if="settings.showDelete[index]"
+            class="--delete rounded-0 rounded-end border-0"
             @click="todoList.splice(index, 1)"
           >
-            Delete
+            <img src="@/assets/icons/trash.png" alt="Deletar Tarefa">
           </button>
         </Transition>
       </div>
@@ -91,6 +90,10 @@
 </template>
 
 <script>
+import SecureLS from 'secure-ls';
+
+const ls = new SecureLS({ encodingType: 'aes', isCompression: false });
+
 export default {
   name: 'ToDo',
   data() {
@@ -117,6 +120,14 @@ export default {
       todoList: [],
     };
   },
+  watch: {
+    todoList: {
+      handler(data) {
+        ls.set('todo_list', data);
+      },
+      deep: true,
+    },
+  },
   methods: {
     addTodo() {
       this.todoList.push(this.todo);
@@ -129,29 +140,26 @@ export default {
       };
     },
   },
+  created() {
+    if (ls.get('todo_list')) {
+      this.todoList = ls.get('todo_list');
+    }
+  },
 };
 </script>
 
 <style lang="scss">
+  $content-size: 500px;
+
   body {
     background-color: rgb(42, 52, 77) !important;
   }
 
-  .slide-fade-leave-active {
-    transition: opacity 0.5s ease;
-    opacity: 1;
-  }
-
-  .slide-fade-fade-enter-from,
-  .slide-fade-fade-leave-to {
-    opacity: 0;
-  }
-
   #todo-main {
     .task {
-      width: 65%;
+      width: $content-size + 230px;
       box-shadow: 0px 11px 46px 0px rgba(0,0,0,0.1);
-      height: 68px !important;
+      height: 55px !important;
     }
 
     .alert {
@@ -159,9 +167,10 @@ export default {
     }
 
     .--delete {
-      height: 68px !important;
+      height: 55px !important;
       align-items: center;
-      width: 0px;
+      width: 50px;
+      background-color: rgb(214, 28, 28);
     }
 
     .priority {
@@ -181,7 +190,7 @@ export default {
 
     label {
       input {
-        width: 500px;
+        width: $content-size;
       }
 
       input, select {
@@ -191,7 +200,11 @@ export default {
     }
 
     .content {
-      height: calc(100vh - 315px)
+      height: calc(100vh - 315px);
+
+      @media (max-width: 1366px) {
+        height: calc(100vh - 240px);
+      }
     }
 
     .task-completed {
@@ -218,6 +231,35 @@ export default {
       padding: 7px 16px;
       transform: translateY(-1px);
       font-size: 1.2rem;
+    }
+
+    .nested-enter-from {
+      transition: all 300ms ease-in-out;
+      width: 0px !important;
+      opacity: 0;
+    }
+
+    .nested-enter-to {
+      transition: all 300ms ease-in-out;
+      width: 50px !important;
+      opacity: 1;
+    }
+
+    .nested-leave-from {
+      transition: all 300ms ease-in-out;
+      width: 50px !important;
+      opacity: 1;
+    }
+
+    .nested-leave-to {
+      transition: all 300ms ease-in-out;
+      width: 0px !important;
+      opacity: 0;
+
+      img {
+        opacity: 0;
+        transition: all 100ms ease-in-out;
+      }
     }
   }
 </style>
