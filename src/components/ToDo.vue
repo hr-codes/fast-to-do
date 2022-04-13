@@ -1,149 +1,73 @@
 <template>
-  <div id="todo-main" class="container">
-    <h1 class=" text-white text-uppercase">
-      Fast To-Do
-    </h1>
+  <div id="todo-main">
+    <div class="container">
+      <div class="col-12 align-items-center mb-4">
+        <h1 class="text-white text-uppercase mb-1">
+          Fast To-Do
+        </h1>
 
-    <h6 class="mb-4 pb-3 text-secondary">
-      Powered by HRCodes
-    </h6>
-
-    <form @submit.prevent="addTodo" class="mb-3" autocomplete="off">
-      <label for="todo">
-        <input
-          id="todo"
-          type="text"
-          class="form-control border-0 rounded"
-          v-model="todo.name"
-          placeholder="Nome da tarefa"
-          required
-        >
-      </label>
-
-      <label
-        for="priority"
-        class="ms-2"
-      >
-        <select
-          name=""
-          id="priority"
-          class="form-select rounded border-0"
-          v-model="todo.priority"
-          required
-        >
-          <option value="">Prioridade</option>
-          <option value="1">Baixa</option>
-          <option value="2">Média</option>
-          <option value="3">Alta</option>
-          <option value="4">Urgente</option>
-        </select>
-      </label>
-
-      <button
-        id="--submit"
-        class="ms-2 text-white rounded"
-      >
-        <img src="@/assets/icons/add.png" alt="Adicionar Tarefa">
-      </button>
-    </form>
-
-    <div class="content overflow-auto">
-      <div
-        v-for="(todo, index) in todoList"
-        :key="index"
-        class="d-flex align-items-center rounded mt-3 task mx-auto p-0"
-        v-bind:class="Number(todo.status) === 1 ? 'bg-completed text-white' : 'bg-white'"
-        @mouseenter="settings.showDelete[index] = true"
-        @mouseleave="settings.showDelete[index] = false"
-      >
-        <div
-          class="col alert mb-0 row align-items-center"
-          v-bind:class="settings.status[todo.status]"
-          @click="todo.status === 0 ? todo.status = 1 : todo.status = 0"
-        >
-          <div class="d-flex align-items-center">
-            <div
-              class="priority me-3 rounded-circle mb-0"
-              v-bind:class="`
-                bg-${settings.colors[todo.priority]}
-              `"
-            />
-
-            <h6 class="col p-0 m-0 text-start">
-              {{ todo.name }}
-            </h6>
-          </div>
-        </div>
-
-        <Transition name="nested">
-          <button
-            v-if="settings.showDelete[index]"
-            class="--delete rounded-0 rounded-end border-0"
-            @click="todoList.splice(index, 1)"
-          >
-            <img src="@/assets/icons/trash.png" alt="Deletar Tarefa">
-          </button>
-        </Transition>
+        <h6 class="pb-3 text-secondary">
+          Powered by HRCodes
+        </h6>
       </div>
+
+      <CreateTodo @getList="getList" />
+
+      <ListTodo
+        :todoList="todoList"
+        @deleteTodo="deleteTodo"
+        @changeStatus="changeStatus"
+        @getList="getList"
+      />
     </div>
+
+    <Legends />
   </div>
 </template>
 
 <script>
-import SecureLS from 'secure-ls';
-
-const ls = new SecureLS({ encodingType: 'aes', isCompression: false });
+import Legends from '@/components/LegendsTodo.vue';
+import CreateTodo from '@/components/CreateTodo.vue';
+import ListTodo from '@/components/ListTodo.vue';
 
 export default {
-  name: 'ToDo',
   data() {
     return {
-      todo: {
-        id: 1,
-        name: '',
-        priority: '',
-        status: 0,
-      },
-      settings: {
-        colors: {
-          1: 'info',
-          2: 'warning',
-          3: 'orange',
-          4: 'purple',
-        },
-        status: {
-          0: 'task-in-progress',
-          1: 'task-completed',
-        },
-        showDelete: {},
-      },
       todoList: [],
     };
   },
-  watch: {
-    todoList: {
-      handler(data) {
-        ls.set('todo_list', data);
-      },
-      deep: true,
-    },
+  components: {
+    Legends,
+    CreateTodo,
+    ListTodo,
   },
   methods: {
-    addTodo() {
-      this.todoList.push(this.todo);
+    getList() {
+      this.todoList = this.$store.getters.getTodoList;
+    },
+    deleteTodo(index) {
+      this.todoList.splice(index, 1);
 
-      this.todo = {
-        id: this.todoList.length + 1,
-        name: '',
-        priority: '',
-        status: 0,
-      };
+      this.$store.dispatch('setTodoList', this.todoList);
+
+      this.getList();
+    },
+    changeStatus(index) {
+      const data = this.todoList[index];
+
+      if (data.status === 0) {
+        data.status = 1;
+      } else {
+        data.status = 0;
+      }
+
+      this.$store.dispatch('setTodoList', this.todoList);
+
+      this.getList();
     },
   },
   created() {
-    if (ls.get('todo_list')) {
-      this.todoList = ls.get('todo_list');
-    }
+    this.getList();
   },
 };
 </script>
@@ -174,8 +98,8 @@ export default {
     }
 
     .priority {
-      width: 15px !important;
-      height: 15px !important;
+      width: 9px !important;
+      height: 9px !important;
     }
 
     .hr-rounded-pill-start {
@@ -199,14 +123,6 @@ export default {
       }
     }
 
-    .content {
-      height: calc(100vh - 315px);
-
-      @media (max-width: 1366px) {
-        height: calc(100vh - 240px);
-      }
-    }
-
     .task-completed {
       text-decoration: line-through;
     }
@@ -225,8 +141,11 @@ export default {
 
     #--submit {
       border: 0;
-      background-color: rgb(53, 161, 233);
-      border-bottom: 4px solid rgb(36, 105, 151);
+      border: 0 !important;
+      background: rgb(76, 68, 216);
+      background: linear-gradient(0deg, rgb(105, 97, 252) 0%, rgba(0,212,255,1) 100%);
+
+      border-bottom: 4px solid rgb(59, 54, 151)!important;
       border-radius: 4px;
       padding: 7px 16px;
       transform: translateY(-1px);
