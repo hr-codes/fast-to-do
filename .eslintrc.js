@@ -16,5 +16,9 @@ module.exports = {
     'vuejs-accessibility/click-events-have-key-events': 0,
     'vuejs-accessibility/mouse-events-have-key-events': 0,
     'linebreak-style': 0,
+    'import/no-extraneous-dependencies': ['error', { devDependencies: true }],
+  },
+  settings: {
+    'import/core-modules': ['electron'],
   },
 };
